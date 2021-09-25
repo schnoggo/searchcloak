@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ * Plugin Name: SearchCloak
+ * Version: 2.1.2
+ *
  * Description: Allows Pages to be omitted from search results and search engine indexes
  * Author: Lon Koenig and Firebrand LLC
  * Author URI: http://lonk.me/
@@ -37,6 +41,7 @@ $searchcloak_settings = array(
 	'op_name'          => 'searchcloak_settings',
 	'nonindex'         => '',
 );
+$searchcloak_head_robots = array();
 
 /**
  * Adds an interface box to the editor window
@@ -352,7 +357,8 @@ function searchcloak_noindex() {
  * This buffer can be modified to add/remove/modify meta tags
  */
 function searchcloak_capture_head_start() {
-	ob_start( 'searchcloak_filter_head' );
+	ob_start( 'searchcloak_filter_head' ); // callback is our main "filter".
+	echo "<!-- start capture -->\n";
 }
 
 
@@ -388,7 +394,10 @@ function searchcloak_filter_head( $capture ) {
 		$capture .= "\t<meta name=\"robots\" content=\"" . $index . ',' . $follow . "\" />\n";
 
 	}
+
+	$capture .= "\n\t<!-- SearchCloak plugin -->\n";
 	return $capture;
+//	return "<!-- whatevs -->\n";
 }
 
 /**
@@ -396,17 +405,30 @@ function searchcloak_filter_head( $capture ) {
  *  This will trigger the callback where we filter the head contents.
  */
 function searchcloak_capture_head_end() {
-	ob_end_flush();
+
+	ob_flush();
+//	echo "<!-- captured -->\n";
 }
 
 searchcloak_add_to_theme();
 add_action( 'init', 'create_searchcloak_taxonomy', 0 );
 add_filter( 'pre_get_posts', 'searchcloak_search_filters', 2 ); // number is priority - lower=earlier.
 
-add_action( 'wp_head', 'searchcloak_noindex' ); // add our NOINDEX if needed.
+// add_action( 'wp_head', 'searchcloak_noindex' ); // add our NOINDEX if needed.
 
 // filter the rendered head section to remove multiple robots meta tags.
-add_action( 'get_header', 'searchcloak_capture_head_start' ); // start recording just before head is rendered.
-add_action( 'wp_head', 'searchcloak_capture_head_end', PHP_INT_MAX - 1 ); // make sure it is the last thing in the head.
+// add_action( 'wp_head', 'searchcloak_capture_head_start', PHP_INT_MIN + 1 ); // start recording just before head is rendered.
+// add_action( 'wp_head', 'searchcloak_capture_head_end',   PHP_INT_MAX - 1 ); // make sure it is the last thing in the head.
+
+
+// add_action('wp', function(){ ;exit; } );
+
+add_action( 'wp_footer', 'searchcloak_rebug', PHP_INT_MAX - 1 ); // make sure it is the last thing in the head.
+function searchcloak_rebug() {
+	global $GLOBALS;
+	echo "<!-- \n";
+// echo print_r( $GLOBALS['wp_filter']['wp_head'], true );
+	echo "\n -->\n";
+}
 
 require_once 'searchcloak-admin.php';
